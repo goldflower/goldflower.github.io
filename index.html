@@ -1,1 +1,397 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教練時間表</title>
+    <!-- CSS -->
+    <style>
+        body {
+            /* height: 100vh; */
+            display: grid;
+            place-items: center;
+            background-color: rgb(1, 1, 1);
+        }
+
+        .calendar {
+            height: 1600px;
+            width: 100%;
+            background-color: rgb(116, 116, 116);
+            border-radius: 30px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .calendar-header {
+            text-align: center;
+            font-size: 25px;
+            color: rgb(255, 255, 255);
+            padding: 10px;
+        }
+
+        .year-picker {
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .month-picker {
+            height:50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .month {
+            width: 200px;
+        }
+
+        .month-change {
+            width: 200px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            margin: 0 10px;
+            cursor: pointer;
+        }
+
+        .calendar-week-day {
+            height: 40px;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            font-weight: 600;
+        }
+
+        .calendar-week-day div {
+            display: grid;
+            text-align: center;
+            /* place-items: center; */
+            color: rgb(255, 255, 255);
+        }
+
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            font-size: 25px;
+            color: rgb(255, 255, 255);
+        }
+
+        .calendar-days div {
+            /* width: 70px; */
+            height: 240px;
+            text-align: center;
+            /* display: flex; */
+            /* align-items: center; */
+            /* justify-content: center; */
+            /* margin-left: 8px; */
+            position: relative;
+            cursor: pointer;
+            /* animation: to-top 1s forwards; */
+            border-radius: 10%;
+            border: 1px solid rgb(255, 255, 255);
+            background-color: rgb(116, 116, 116);
+        }
+
+        .calendar-days div:hover {
+            /* transition: 0.5s ease-in-out; */
+            /* width: 50px; */
+            /* height: 50px; */
+            /* width: 100%; */
+            /* height: 100%; */
+            border-radius: 10%;
+            /* border: 1px solid rgb(255, 234, 0); */
+            background-color: rgb(50, 50, 50);
+        }
+
+        .calendar-days div.calendar-test {
+            height: 0px;
+            border: 0px;
+            font-size: 9pt;
+            text-align: start;
+            margin-left: 8px;
+        }
+
+        .calendar-days div span {
+            position: absolute;
+        }
+
+        .calendar-days div.curr-date,
+        .calendar-days div.curr-date:hover {
+            background-color: rgb(17, 112, 255);
+            color: white;
+            /* border-radius: 50%; */
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="calendar">
+
+        <div class="calendar-header">
+            <!-- 年 -->
+            <span class="year-picker" id="year">2022</span>
+            <!-- 月 -->
+            <div class="month-picker">
+                <span class="month-change" id="prev-month">
+                    <pre><</pre>
+                </span>
+                <span class="month" id="month">February</span>
+                <span class="month-change" id="next-month">
+                    <pre>></pre>
+                </span>
+            </div>
+
+        </div>
+
+        <div class="calendar-body">
+            <!-- 日 -->
+
+            <!-- 星期 -->
+            <div class="calendar-week-day">
+                <div>日</div>
+                <div>一</div>
+                <div>二</div>
+                <div>三</div>
+                <div>四</div>
+                <div>五</div>
+                <div>六</div>
+            </div>
+            <!-- 日期 -->
+            <div class="calendar-days">
+
+            </div>
+
+        </div>
+
+        <div class="month-list"></div>
+
+    </div>
+
+    <!---------------------------------------------------- JavaScript ---------------------------------------------------->
+    <script >
+        const ALLOW_SHOW_RANGE_EXCEED_SEASON = false;
+
+        /*** REPLACE_CALENDAR_DATA_BEGIN_MARKER ***/
+		const overallAvailableSchedule = {"2023":{"12":{"16":{"ski":[{"keng":{"王冠均":{"num":4,"level":0,"needEquipNum":4}}}],"snowboard":[{"miao":{"王冠均":{"num":5,"level":0,"needEquipNum":5}}}],"請假名單":["eric"]},"17":{"請假名單":["eric"]},"18":{"請假名單":["eric"]},"19":{"請假名單":["eric"]},"20":{"請假名單":["eric"]},"21":{"請假名單":["eric"]},"22":{"請假名單":["eric"]},"23":{"請假名單":["eric","miao","keng"]},"24":{"ski":[{"keng":{"YKT志賀SKI":{"num":3,"level":2,"needEquipNum":3}}}],"snowboard":[{"miao":{"YKT志賀SB":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"25":{"ski":[{"keng":{"YKT志賀SKI":{"num":3,"level":2,"needEquipNum":3}}}],"snowboard":[{"miao":{"YKT志賀SB":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"26":{"snowboard":[{"miao":{"YKT志賀SB":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric","keng"]},"27":{"snowboard":[{"miao":{"YKT志賀SB":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric","keng"]},"28":{"snowboard":[{"miao":{"CASA推薦0":{"num":1,"level":0,"needEquipNum":1}}},{"keng":{"HC":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"29":{"snowboard":[{"keng":{"HC":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"30":{"ski":[{"keng":{"CASA推薦1":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"31":{"ski":[{"keng":{"CASA推薦1":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"32":{"ski":[{"keng":{"CASA推薦1":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"33":{"請假名單":["eric"]}}},"2024":{"1":{"1":{"ski":[{"keng":{"CASA推薦1":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"2":{"請假名單":["eric"]},"3":{"snowboard":[{"miao":{"肉羹":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"4":{"snowboard":[{"miao":{"肉羹":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"5":{"請假名單":["eric"]},"6":{"請假名單":["eric","keng","miao"]},"7":{"請假名單":["eric","keng","miao"]},"8":{"請假名單":["eric","keng","miao"]},"9":{"snowboard":[{"miao":{"周智信":{"num":3,"level":0,"needEquipNum":3}}}],"請假名單":["eric"]},"10":{"snowboard":[{"miao":{"王惟聿":{"num":5,"level":0,"needEquipNum":5}}}],"請假名單":["eric"]},"11":{"請假名單":["miao","eric"]},"12":{"請假名單":["miao","eric"]},"13":{"請假名單":["miao","eric"]},"14":{"請假名單":["miao","eric"]},"15":{"snowboard":[{"keng":{"Fang Yu":{"num":1,"level":2,"needEquipNum":1}}}],"請假名單":["miao","eric"]},"16":{"ski":[{"keng":{"陳政男":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["miao","eric"]},"17":{"snowboard":[{"keng":{"kitto":{"num":1,"level":1,"needEquipNum":1}}}],"請假名單":["miao","eric"]},"18":{"請假名單":["miao","eric"]},"19":{"請假名單":["miao","eric"]},"20":{"ski":[{"keng":{"陳蕙欣":{"num":3,"level":0,"needEquipNum":3}}}],"請假名單":["miao","eric"]},"21":{"請假名單":["miao","eric"]},"22":{"snowboard":[{"keng":{"Dorothy":{"num":2,"level":0,"needEquipNum":2}}}],"請假名單":["miao","eric"]},"23":{"請假名單":["miao","eric"]},"24":{"請假名單":["miao","eric"]},"25":{"請假名單":["eric"]},"26":{"請假名單":["eric"]},"27":{"請假名單":["eric"]},"28":{"snowboard":[{"fox":{"洪伯隆":{"num":6,"level":0,"needEquipNum":6}}}],"請假名單":["eric"]},"29":{"snowboard":[{"keng":{"鄭守博":{"num":1,"level":0,"needEquipNum":1}}},{"miao":{"陳怡婷":{"num":2,"level":0,"needEquipNum":2}}},{"fox":{"洪伯隆":{"num":6,"level":0,"needEquipNum":6}}}],"請假名單":["eric"]},"30":{"snowboard":[{"miao":{"陳怡婷":{"num":2,"level":0,"needEquipNum":2}}}],"請假名單":["eric"]},"31":{"請假名單":["keng","miao","eric"]},"32":{"snowboard":[{"miao":{"陳鈺琴":{"num":3,"level":1,"needEquipNum":3}}}],"請假名單":["keng","eric"]},"33":{"snowboard":[{"miao":{"陳鈺琴":{"num":3,"level":1,"needEquipNum":3}}}],"請假名單":["keng","eric"]}},"2":{"1":{"snowboard":[{"miao":{"陳鈺琴":{"num":3,"level":1,"needEquipNum":3}}}],"請假名單":["keng","eric"]},"2":{"snowboard":[{"miao":{"陳鈺琴":{"num":3,"level":1,"needEquipNum":3}}}],"請假名單":["keng","eric"]},"3":{"請假名單":["keng","miao","eric"]},"4":{"請假名單":["keng","eric"]},"5":{"請假名單":["keng","eric"]},"6":{"請假名單":["keng","eric"]},"7":{"請假名單":["keng","eric"]},"8":{"請假名單":["keng","eric"]},"9":{"請假名單":["keng","eric"]},"10":{"請假名單":["keng","miao","eric"]},"11":{"請假名單":["keng","eric"]},"12":{"請假名單":["keng","eric"]},"13":{"請假名單":["keng","eric"]},"14":{"請假名單":["keng","eric"]},"15":{"請假名單":["keng","eric"]},"16":{"請假名單":["keng","eric"]},"17":{"請假名單":["eric"]},"18":{"請假名單":["eric"]},"19":{"snowboard":[{"miao":{"施芊卉":{"num":2,"level":0,"needEquipNum":2}}}],"請假名單":["eric"]},"20":{"snowboard":[{"miao":{"施芊卉":{"num":2,"level":0,"needEquipNum":2}}}],"請假名單":["eric"]},"21":{"請假名單":["eric"]},"22":{"請假名單":["eric"]},"23":{"請假名單":["eric"]},"24":{"snowboard":[{"miao":{"Suri":{"num":4,"level":1,"needEquipNum":4}}}],"請假名單":["eric"]},"25":{"snowboard":[{"miao":{"Suri":{"num":4,"level":1,"needEquipNum":4}}}],"請假名單":["eric"]},"26":{"snowboard":[{"keng":{"許春美":{"num":4,"level":0,"needEquipNum":4}}},{"eric":{"Jackson":{"num":3,"level":1,"needEquipNum":3}}},{"miao":{"minmin":{"num":3,"level":2,"needEquipNum":3}}}]},"27":{"snowboard":[{"keng":{"許春美":{"num":4,"level":0,"needEquipNum":4}}}],"請假名單":["eric"]},"28":{"snowboard":[{"miao":{"王宇宸":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"29":{"snowboard":[{"miao":{"王宇宸":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"30":{"snowboard":[{"miao":{"王宇宸":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"31":{"請假名單":["eric"]}},"3":{"1":{"snowboard":[{"miao":{"王宇宸":{"num":1,"level":0,"needEquipNum":1}}}],"請假名單":["eric"]},"2":{"請假名單":["eric"]},"3":{"snowboard":[{"miao":{"洪育超":{"num":2,"level":2,"needEquipNum":2}}}],"請假名單":["eric"]},"4":{"請假名單":["eric"]},"5":{"請假名單":["eric"]},"6":{"請假名單":["eric"]},"7":{"請假名單":["eric"]},"8":{"請假名單":["eric"]},"9":{"請假名單":["eric"]},"10":{"請假名單":["eric"]},"11":{"請假名單":["eric"]},"12":{"請假名單":["eric"]},"13":{"請假名單":["eric"]},"14":{"請假名單":["eric"]},"15":{"請假名單":["eric"]},"16":{"請假名單":["eric"]},"17":{"請假名單":["eric"]},"18":{"請假名單":["eric"]},"19":{"請假名單":["eric"]},"20":{"請假名單":["eric"]},"21":{"請假名單":["eric"]},"22":{"請假名單":["eric"]},"23":{"請假名單":["eric"]},"24":{"請假名單":["eric"]},"25":{"請假名單":["eric"]},"26":{"請假名單":["eric"]},"27":{"請假名單":["eric"]},"28":{"請假名單":["eric"]},"29":{"請假名單":["eric"]},"30":{"請假名單":["eric"]},"31":{"請假名單":["eric"]},"32":{"請假名單":["eric"]},"33":{"請假名單":["eric","miao"]}},"4":{"1":{"請假名單":["eric"]},"2":{"請假名單":["eric","miao"]},"3":{"請假名單":["eric"]},"4":{"請假名單":["eric"]},"5":{"請假名單":["eric"]},"6":{"請假名單":["eric"]},"7":{"請假名單":["eric"]},"8":{"請假名單":["eric"]},"9":{"請假名單":["eric"]},"10":{"請假名單":["eric"]}}}};
+		/*** REPLACE_CALENDAR_DATA_END_MARKER ***/
+
+        /*** REPLACE_CALENDAR_CONSTANT_BEGIN_MARKER ***/
+const DAY_TS = 24 * 60 * 60 * 1000;
+const SEASON_BEGIN = new Date(2023, 12 - 1, 14);
+const SEASON_END = new Date(2024, 4 - 1, 15);
+const MONTH_NAMES = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', ' 十月', '十一月', '十二月'];
+const MIN_DISPLAY_NUM = {
+    "團體課": 1,
+    "私人課": 1,
+    "包團服務": 1
+};
+const SERVICE_DISPLAY_UNIT = {
+    "團體課": "人",
+    "私人課": "班",
+    "包團服務": "人"
+};
+// 可以看到名額的時間
+const SERVICE_VISIBLE_TS = {
+    "團體課": new Date( new Date().getFullYear(), new Date().getMonth(), new Date().getDate() ).getTime(),
+    "私人課": new Date( new Date().getFullYear(), new Date().getMonth(), new Date().getDate() ).getTime(),
+    "包團服務": new Date( new Date().getFullYear(), new Date().getMonth(), new Date().getDate() ).getTime()
+}
+// 服務開放的時間
+const SERVICE_OPEN_TS = {
+    "團體課": new Date( 2023, 11, 23 ).getTime(),
+    "私人課": new Date( 2023, 11, 23 ).getTime(),
+    "包團服務": new Date( 2023, 11, 23 ).getTime()
+}
+const FORCE_ALL_SERVICE_VISIBLE = false;   // 要看私人/團體課請在calendar.html中自行改成true.
+/*** REPLACE_CALENDAR_CONSTANT_END_MARKER ***/
+
+        main();
+        // 設定閏月的規則 https://xiwan.io/archive/most-efficient-leap-year-algorithm.html
+        function isLeapYear(year) {
+            return (year % 4 === 0 && year % 100 !== 0 && year % 400 !== 0) || (year % 100 === 0 && year % 400 === 0);
+        }
+
+        // 抓閏月
+        function getFebDays(year) {
+            return isLeapYear(year) ? 29 : 28;
+        }
+
+        function getDaysOfMonth(month, year) {
+            let daysOfMonth = [31, getFebDays(year), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            return daysOfMonth[month];
+        }
+        function copyToClipboardAndShowResultOnNewTab( text ) {
+            var textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            var successful = document.execCommand("copy");
+            document.body.removeChild(textArea);
+            if (successful) {
+                console.log("複製到剪貼簿");
+            } else {
+                console.error("複製失敗");
+            }
+            var newTab = window.open("about:blank", "_blank");
+            newTab.document
+            newTab.document.write( "<textArea style=\"resize:none;width:100%;height:100%;\">" + text + "</textArea>");
+            newTab.document.close(); // to finish loading the page
+        }
+        function main () {
+            // 抓calendar css
+            let calendar = document.querySelector('.calendar');
+
+            // 產生年月
+            generateCalendar = (month, year) => {
+                let calendarDays = calendar.querySelector('.calendar-days');
+                let calendarHeaderYear = calendar.querySelector('#year');
+                let calendarHeaderMonth = calendar.querySelector('#month');
+
+                calendarDays.innerHTML = '';
+
+                // 抓現在的日期
+                let currDate = new Date();
+
+                let currMonth = `${MONTH_NAMES[month]}`;
+                calendarHeaderMonth.innerHTML = currMonth;
+                calendarHeaderYear.innerHTML = year;
+
+                let firstDay = new Date(year, month, 1);
+                let toDay = getDaysOfMonth(month, year) + firstDay.getDay() - 1;
+                // toDay = Math.ceil((toDay+1) / 7) * 7 - 1
+
+                let yearData = overallAvailableSchedule[year] ? overallAvailableSchedule[year] : {};
+                let monthData = yearData[month+1] ? yearData[month+1] : {};
+
+                for (let i = 0; i <= toDay; i++) {
+                    let dayDiv = document.createElement('div');
+                    // if (i >= firstDay.getDay() && i <= getDaysOfMonth[month] + firstDay.getDay() - 1) {
+                    let day = i - firstDay.getDay() + 1;
+                    let dayTs = new Date(year, month, day);
+                    let dayData = monthData[day] ? monthData[day] : {};
+                    let readyToCopy = "";
+                    if ( day >= 1 ) {
+                        dayDiv.innerHTML = day;
+                        if ( dayTs > SEASON_BEGIN.getTime() - DAY_TS && dayTs <= SEASON_END.getTime() ) {
+                            let skiGroup = dayData["ski"] ?  dayData["ski"] : [];
+                            let skiStr = "";
+                            let needBr = false;
+                            if ( skiGroup.length ) {
+                                needBr = true;
+                                skiStr = "\"ski\":<br>"
+                                for ( let j = 0; j < skiGroup.length; j++ ) {
+                                    let content = JSON.stringify( skiGroup[j] );
+                                    if ( skiGroup.length !== 1 ) {
+                                        if ( j !== skiGroup.length - 1 ) {
+                                            content = content.substring(0, content.length-1);
+                                        }
+                                        if ( j !== 0 ) {
+                                            content = "," + content.substring(1, content.length);
+                                        }
+                                    }
+                                    skiStr += content;
+                                    if ( j !== skiGroup.length - 1 ) {
+                                        skiStr += "<br>";
+                                    }
+                                }
+                            }
+                            let snowboardGroup = dayData["snowboard"] ?  dayData["snowboard"] : [];
+                            let snowboardStr = "";
+                            if ( snowboardGroup.length ) {
+                                snowboardStr = ( needBr ? ",<br>" : "" ) + "\"snowboard\":<br>";
+                                needBr = true;
+                                for ( let j = 0; j < snowboardGroup.length; j++ ) {
+                                    let content = JSON.stringify( snowboardGroup[j] );
+                                    if ( snowboardGroup.length !== 1 ) {
+                                        if ( j !== snowboardGroup.length - 1 ) {
+                                            content = content.substring(0, content.length-1);
+                                        }
+                                        if ( j !== 0 ) {
+                                            content = "," + content.substring(1, content.length);
+                                        }
+                                    }
+                                    snowboardStr += content;
+                                    if ( j !== snowboardGroup.length - 1 ) {
+                                        snowboardStr += "<br>";
+                                    }
+                                }
+                            }
+                            let dayoffGroup = dayData["請假名單"] ?  dayData["請假名單"] : [];
+                            let dayoffdStr = "";
+                            if ( dayoffGroup.length ) {
+                                dayoffdStr = "\"請假名單\":<br>[ "
+                                for ( let j = 0; j < dayoffGroup.length; j++ ) {
+                                    dayoffdStr += "\"" + dayoffGroup[j] + "\"";
+                                    if ( j !== dayoffGroup.length - 1 ) {
+                                        dayoffdStr += ", ";
+                                    }
+                                }
+                                dayoffdStr = ( needBr ? ",<br>" : "" ) + dayoffdStr + " ]";
+                            }
+                            readyToCopy = skiStr + snowboardStr + dayoffdStr;
+                            dayDiv.innerHTML += "<div class=\"calendar-test\">" + readyToCopy;
+                        }
+                        if (day === currDate.getDate() && year === currDate.getFullYear() && month === currDate.getMonth()) {
+                            dayDiv.classList.add('curr-date');
+                        }
+                    }
+                    calendarDays.appendChild(dayDiv);
+                    dayDiv.onclick = () => {
+                        if ( readyToCopy !== "" ) {
+                            let showText = JSON.stringify( JSON.parse( "{" + readyToCopy.replaceAll("<br>","") + "}" ) , null, 2 );
+                            showText = year.toString() + "-" + (month + 1).toString() + "-" + day.toString() + "\n" + showText;
+                            copyToClipboardAndShowResultOnNewTab( showText );
+                        }
+                    }
+                }
+            }
+
+            let currDate = new Date();
+            let seasonBeginMonth = new Date(SEASON_BEGIN.getFullYear(), SEASON_BEGIN.getMonth(), 1);
+            let seasonEndMonth = new Date(SEASON_END.getFullYear(), SEASON_END.getMonth(), getDaysOfMonth(SEASON_END.getMonth(), SEASON_END.getFullYear()));
+            let isCurrentDayinSeason = currDate.getTime() > seasonBeginMonth.getTime();
+            let currMonth = { value: isCurrentDayinSeason ? currDate.getMonth() : seasonBeginMonth.getMonth() };
+            let currYear = { value: isCurrentDayinSeason ? currDate.getFullYear() : seasonBeginMonth.getFullYear() };
+
+            generateCalendar(currMonth.value, currYear.value);
+
+            document.querySelector('#prev-month').onclick = () => {
+                let nextYear = currYear.value;
+                let nextMonth = currMonth.value - 1;
+                if ( nextMonth < 0 ) {
+                    nextMonth = nextMonth + 12;
+                    nextYear--;
+                }
+                let diff = (nextYear - seasonBeginMonth.getFullYear()) * 12 + nextMonth - seasonBeginMonth.getMonth();
+                if ( ALLOW_SHOW_RANGE_EXCEED_SEASON || diff >= 0 ) {
+                    currMonth.value = nextMonth;
+                    currYear.value = nextYear;
+                    generateCalendar(currMonth.value, currYear.value);
+                }
+            }
+
+            document.querySelector('#next-month').onclick = () => {
+                let nextYear = currYear.value;
+                let nextMonth = currMonth.value + 1;
+                if ( nextMonth >= 12 ) {
+                    nextMonth %= 12;
+                    nextYear++;
+                }
+                let diff = (seasonEndMonth.getFullYear() - nextYear) * 12 + seasonEndMonth.getMonth() - nextMonth;
+                if ( ALLOW_SHOW_RANGE_EXCEED_SEASON || diff >= 0 ) {
+                    currMonth.value = nextMonth;
+                    currYear.value = nextYear;
+                    generateCalendar(currMonth.value, currYear.value);
+                }
+            }
+        };
+    </script>
+</body>
+
+</html>
