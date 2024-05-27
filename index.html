@@ -194,7 +194,7 @@ const MIN_DISPLAY_NUM = {
 const SERVICE_DISPLAY_UNIT = {
     "團體課": "人",
     "私人課": "班",
-    "包團服務": "人"
+    "包團服務": "團"
 };
 // 可以看到名額的時間
 const SERVICE_VISIBLE_TS = {
@@ -322,10 +322,17 @@ const FORCE_ALL_SERVICE_VISIBLE = false;   // 要看私人/團體課請在calend
                                     }
                                 }
                             }
+                            
+                            let freeRideGroup = dayData["自由行"] ? dayData["自由行"] : {};
+                            let freeRideStr = "";
+                            if ( Object.keys(freeRideGroup).length ) {
+                                freeRideStr = ( needBr ? ",<br>" : "" ) + "\"自由行\":<br>" + JSON.stringify( freeRideGroup );
+                            }
+
                             let dayoffGroup = dayData["請假名單"] ?  dayData["請假名單"] : [];
                             let dayoffdStr = "";
                             if ( dayoffGroup.length ) {
-                                dayoffdStr = "\"請假名單\":<br>[ "
+                                dayoffdStr = "\"請假名單\":<br>[ ";
                                 for ( let j = 0; j < dayoffGroup.length; j++ ) {
                                     dayoffdStr += "\"" + dayoffGroup[j] + "\"";
                                     if ( j !== dayoffGroup.length - 1 ) {
@@ -334,7 +341,7 @@ const FORCE_ALL_SERVICE_VISIBLE = false;   // 要看私人/團體課請在calend
                                 }
                                 dayoffdStr = ( needBr ? ",<br>" : "" ) + dayoffdStr + " ]";
                             }
-                            readyToCopy = skiStr + snowboardStr + dayoffdStr;
+                            readyToCopy = skiStr + snowboardStr + freeRideStr + dayoffdStr;
                             dayDiv.innerHTML += "<div class=\"calendar-test\">" + readyToCopy;
                         }
                         if (day === currDate.getDate() && year === currDate.getFullYear() && month === currDate.getMonth()) {
