@@ -197,43 +197,75 @@
 
     <!---------------------------------------------------- JavaScript ---------------------------------------------------->
     <script >
-        const ALLOW_SHOW_RANGE_EXCEED_SEASON = false;
+        let ALLOW_SHOW_RANGE_EXCEED_SEASON = false;
+        let DAY_TS = 24 * 60 * 60 * 1000;
+        let SEASON_BEGIN = null;
+        let SEASON_END = null;
+        let MONTH_NAMES = [];
+        let MIN_DISPLAY_NUM = {};
+        let SERVICE_DISPLAY_UNIT = {};
+        // 可以看到名額的時間
+        let SERVICE_VISIBLE_TS = {}
+        // 服務開放的時間
+        let SERVICE_OPEN_TS = {}
+        let FORCE_ALL_SERVICE_VISIBLE = false;   // 要看私人/團體課請在calendar.html中自行改成true.
 
-        /*** REPLACE_CALENDAR_DATA_BEGIN_MARKER ***/
-		const overallAvailableSchedule = {"2025":{"12":{"請假統計":{"miao":0,"eric":0,"keng":0}}},"2026":{"1":{"請假統計":{"miao":0,"eric":0,"keng":0}},"2":{"請假統計":{"miao":0,"eric":0,"keng":0}},"3":{"請假統計":{"miao":0,"eric":0,"keng":0}},"4":{"請假統計":{"miao":0,"eric":0,"keng":0}},"5":{"請假統計":{"miao":0,"eric":0,"keng":0}}},"目前教練課數":{"miao":0,"eric":0,"keng":0}};
-		/*** REPLACE_CALENDAR_DATA_END_MARKER ***/
+		let overallAvailableSchedule = {}
 
-        /*** REPLACE_CALENDAR_CONSTANT_BEGIN_MARKER ***/
-const DAY_TS = 24 * 60 * 60 * 1000;
-const SEASON_BEGIN = new Date(2025, 12 - 1, 16);
-const SEASON_END = new Date(2026, 5 - 1, 9);
-const MONTH_NAMES = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', ' 十月', '十一月', '十二月'];
-const MIN_DISPLAY_NUM = {
-    "團體課": 1,
-    "私人課": 1,
-    "包團服務": 1
-};
-const SERVICE_DISPLAY_UNIT = {
-    "團體課": "人",
-    "私人課": "班",
-    "包團服務": "團"
-};
-// 可以看到名額的時間
-const SERVICE_VISIBLE_TS = {
-    "團體課": new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime(),
-    "私人課": new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime(),
-    "包團服務": new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime()
-}
-// 服務開放的時間
-const SERVICE_OPEN_TS = {
-    "團體課": new Date(2023, 11, 23).getTime(),
-    "私人課": new Date(2023, 11, 23).getTime(),
-    "包團服務": new Date(2023, 11, 23).getTime()
-}
-const FORCE_ALL_SERVICE_VISIBLE = false;   // 要看私人/團體課請在calendar.html中自行改成true.
-/*** REPLACE_CALENDAR_CONSTANT_END_MARKER ***/
+        const SEASON_CONFIG_URL = 'https://calendar-read-server-752313138516.asia-east1.run.app/calendar/season-config';
+        const CALENDAR_DATA_URL = 'https://calendar-read-server-752313138516.asia-east1.run.app/calendar/instructor-calendar-data';
+        async function loadCalendarData() {
+        const res = await fetch(CALENDAR_DATA_URL);
+            if (!res.ok) {
+                throw new Error(`Failed to load calendar data: ${res.status}`);
+            }
 
-        main();
+            const data = await res.json();
+            overallAvailableSchedule = data || {};
+        }
+        async function loadSeasonConfig() {
+            const res = await fetch(SEASON_CONFIG_URL);
+            if (!res.ok) {
+                throw new Error(`Failed to load season config: ${res.status}`);
+            }
+
+            const config = await res.json();
+
+            ALLOW_SHOW_RANGE_EXCEED_SEASON = config.ALLOW_SHOW_RANGE_EXCEED_SEASON ?? false;
+            DAY_TS = 24 * 60 * 60 * 1000;
+            SEASON_BEGIN = new Date(config.SEASON_BEGIN);
+            SEASON_END = new Date(config.SEASON_END);
+            MONTH_NAMES = config.MONTH_NAMES || [];
+            MIN_DISPLAY_NUM = config.MIN_DISPLAY_NUM || {};
+            SERVICE_DISPLAY_UNIT = config.SERVICE_DISPLAY_UNIT || {};
+            FORCE_ALL_SERVICE_VISIBLE = config.FORCE_ALL_SERVICE_VISIBLE ?? false;
+
+            const now = new Date();
+            const todayTs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+            SERVICE_VISIBLE_TS = {};
+            for (const key of Object.keys(config.SERVICE_VISIBLE_TS || {})) {
+                const raw = config.SERVICE_VISIBLE_TS[key];
+                SERVICE_VISIBLE_TS[key] = raw === 'dynamic_today' ? todayTs : new Date(raw).getTime();
+            }
+
+            SERVICE_OPEN_TS = {};
+            for (const key of Object.keys(config.SERVICE_OPEN_TS || {})) {
+                SERVICE_OPEN_TS[key] = new Date(config.SERVICE_OPEN_TS[key]).getTime();
+            }
+        }
+        async function bootstrap() {
+            try {
+                await loadSeasonConfig();
+                await loadCalendarData();
+                main();
+            } catch (err) {
+                console.error(err);
+                alert('載入行事曆設定失敗');
+            }
+        }
+
+        bootstrap();
         // 設定閏月的規則 https://xiwan.io/archive/most-efficient-leap-year-algorithm.html
         function isLeapYear(year) {
             return (year % 4 === 0 && year % 100 !== 0 && year % 400 !== 0) || (year % 100 === 0 && year % 400 === 0);
