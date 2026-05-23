@@ -211,9 +211,8 @@
         let FORCE_ALL_SERVICE_VISIBLE = false;   // 要看私人/團體課請在calendar.html中自行改成true.
 
 		let overallAvailableSchedule = {}
-
-        const SEASON_CONFIG_URL = 'https://calendar-read-server-752313138516.asia-east1.run.app/calendar/season-config';
-        const CALENDAR_DATA_URL = 'https://calendar-read-server-752313138516.asia-east1.run.app/calendar/instructor-calendar-data';
+        const SEASON_CONFIG_URL = 'https://api.sidecutburninglab.net/data-get/season-config';
+        const CALENDAR_DATA_URL = 'https://api.sidecutburninglab.net/data-get/calendar/instructor';
         async function loadCalendarData() {
         const res = await fetch(CALENDAR_DATA_URL);
             if (!res.ok) {
