@@ -20,6 +20,7 @@
             --ski: #1e6ea8;
             --snowboard: #9a4f1f;
             --dayoff: #6c5b7b;
+            --transfer: #497044;
             --danger: #b64242;
             --shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
             --radius: 8px;
@@ -329,6 +330,11 @@
             border-left-color: var(--dayoff);
         }
 
+        .extra-pill.transfer {
+            background: #edf3e8;
+            border-left-color: var(--transfer);
+        }
+
         .more-line {
             color: var(--muted);
             font-size: 12px;
@@ -417,6 +423,47 @@
         }
 
         .student-chip span {
+            color: var(--muted);
+        }
+
+        .transfer-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .transfer-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface-strong);
+            padding: 10px;
+        }
+
+        .transfer-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .transfer-customer-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .transfer-customer-chip {
+            max-width: 100%;
+            border-radius: 999px;
+            background: #edf3e8;
+            color: var(--text);
+            padding: 4px 8px;
+            font-size: 12px;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .transfer-meta {
             color: var(--muted);
         }
 
@@ -989,10 +1036,12 @@
                 .slice(0, 3);
 
             extraEntries.forEach(([key, value]) => {
+                const extraClass = key === '請假名單' ? 'dayoff' : key === '送客名單' ? 'transfer' : '';
+
                 parts.push(`
-                    <div class="extra-pill ${key === '請假名單' ? 'dayoff' : ''}">
+                    <div class="extra-pill ${extraClass}">
                         <strong>${escapeHtml(key)}</strong>
-                        <span>${escapeHtml(formatExtraSummary(value))}</span>
+                        <span>${escapeHtml(formatExtraSummary(key, value))}</span>
                     </div>
                 `);
             });
@@ -1006,7 +1055,19 @@
             return `<div class="day-summary">${parts.join('')}</div>`;
         }
 
-        function formatExtraSummary(value) {
+        function formatExtraSummary(key, value) {
+            if (key === '送客名單') {
+                const rows = normalizeTransferRows(value);
+                const customerCount = rows.reduce((sum, row) => sum + row.customers.length, 0);
+                const instructorNames = rows.map((row) => row.instructor).filter(Boolean).join('、');
+                const countText = [
+                    rows.length ? `${rows.length}位教練` : '',
+                    customerCount ? `${customerCount}位客人` : '',
+                ].filter(Boolean).join(' / ');
+
+                return [countText, instructorNames].filter(Boolean).join(': ');
+            }
+
             if (Array.isArray(value)) {
                 return value.join('、');
             }
@@ -1163,11 +1224,143 @@
         }
 
         function renderExtraDetailSection(key, value) {
+            if (key === '送客名單') {
+                return renderTransferDetailSection(value);
+            }
+
             return `
                 <section class="detail-section">
                     <h3>${escapeHtml(key)}</h3>
                     <pre class="json-preview">${escapeHtml(JSON.stringify(value, null, 2))}</pre>
                 </section>
+            `;
+        }
+
+        function normalizeTransferRows(value) {
+            if (Array.isArray(value)) {
+                const objectRows = value
+                    .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
+                    .flatMap((item) => Object.entries(item).map(([instructor, customers]) => ({
+                        instructor,
+                        customers: normalizeTransferCustomers(customers),
+                    })));
+
+                if (objectRows.length) {
+                    return objectRows;
+                }
+
+                return [{
+                    instructor: '未指定教練',
+                    customers: normalizeTransferCustomers(value),
+                }];
+            }
+
+            if (value && typeof value === 'object') {
+                return Object.entries(value).map(([instructor, customers]) => ({
+                    instructor,
+                    customers: normalizeTransferCustomers(customers),
+                }));
+            }
+
+            return [{
+                instructor: '未指定教練',
+                customers: normalizeTransferCustomers(value),
+            }];
+        }
+
+        function normalizeTransferCustomers(value) {
+            if (Array.isArray(value)) {
+                return value.flatMap((item) => normalizeTransferCustomers(item));
+            }
+
+            if (value && typeof value === 'object') {
+                return Object.entries(value).map(([name, detail]) => ({
+                    name,
+                    meta: formatTransferMeta(detail),
+                }));
+            }
+
+            return String(value || '')
+                .split(/[、,，\n]/)
+                .map((name) => name.trim())
+                .filter(Boolean)
+                .map((name) => ({
+                    name,
+                    meta: '',
+                }));
+        }
+
+        function formatTransferMeta(value) {
+            if (value === null || value === undefined || value === '') {
+                return '';
+            }
+
+            if (typeof value !== 'object') {
+                return String(value);
+            }
+
+            return Object.entries(value)
+                .map(([key, itemValue]) => {
+                    if (itemValue === null || itemValue === undefined || itemValue === '') {
+                        return '';
+                    }
+
+                    if (typeof itemValue === 'object') {
+                        return `${key}: ${JSON.stringify(itemValue)}`;
+                    }
+
+                    return `${key}: ${itemValue}`;
+                })
+                .filter(Boolean)
+                .join(' · ');
+        }
+
+        function renderTransferDetailSection(value) {
+            const rows = normalizeTransferRows(value).filter((row) => row.customers.length);
+            const customerCount = rows.reduce((sum, row) => sum + row.customers.length, 0);
+
+            if (!rows.length) {
+                return `
+                    <section class="detail-section">
+                        <h3>送客名單</h3>
+                        <div class="empty-state">沒有送客資料</div>
+                    </section>
+                `;
+            }
+
+            return `
+                <section class="detail-section">
+                    <h3>
+                        <span>送客名單</span>
+                        <span>${rows.length}位教練 / ${customerCount}位客人</span>
+                    </h3>
+                    <div class="transfer-list">
+                        ${rows.map(renderTransferCard).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderTransferCard(row) {
+            return `
+                <article class="transfer-card">
+                    <div class="transfer-title">
+                        <span>${escapeHtml(row.instructor)}</span>
+                        <span>${row.customers.length}位</span>
+                    </div>
+                    <div class="transfer-customer-list">
+                        ${row.customers.map(renderTransferCustomerChip).join('')}
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderTransferCustomerChip(customer) {
+            return `
+                <span class="transfer-customer-chip">
+                    ${escapeHtml(customer.name)}
+                    ${customer.meta ? `<span class="transfer-meta"> ${escapeHtml(customer.meta)}</span>` : ''}
+                </span>
             `;
         }
 
