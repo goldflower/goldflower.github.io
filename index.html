@@ -1,202 +1,557 @@
-
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教練時間表</title>
-    <!-- CSS -->
     <style>
-        body {
-            /* height: 100vh; */
-            display: grid;
-            place-items: center;
-            background-color: rgb(1, 1, 1);
+        :root {
+            --bg: #101214;
+            --surface: #f7f7f2;
+            --surface-soft: #ededdf;
+            --surface-strong: #ffffff;
+            --text: #202326;
+            --muted: #747a81;
+            --border: #d9d9ca;
+            --accent: #166f7a;
+            --accent-soft: #d9f0ef;
+            --ski: #1e6ea8;
+            --snowboard: #9a4f1f;
+            --dayoff: #6c5b7b;
+            --danger: #b64242;
+            --shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+            --radius: 8px;
         }
 
-        .calendar {
-            height: 1960px;
-            width: 1600px;
-            background-color: rgb(116, 116, 116);
-            border-radius: 30px;
-            padding: 20px;
-            position: relative;
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+                var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", Arial, sans-serif;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface-strong);
+            color: var(--text);
+            cursor: pointer;
+            min-height: 40px;
+            padding: 0 14px;
+        }
+
+        button:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        button:disabled,
+        button[aria-disabled="true"] {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        .calendar-shell {
+            width: min(1680px, calc(100vw - 32px));
+            margin: 24px auto;
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             overflow: hidden;
         }
 
-        .calendar-header {
-            text-align: center;
-            font-size: 25px;
-            color: rgb(255, 255, 255);
-            padding: 10px;
-        }
-
-        .year-picker {
-            border-radius: 10px;
-            cursor: pointer;
-        }
-
-        .month-picker {
-            height:50px;
-            display: flex;
+        .app-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
             align-items: center;
-            justify-content: center;
-            position: relative; /* 需要相對定位，便於使用絕對定位 */
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-strong);
         }
 
-        .month {
-            width: 200px;
+        .title-group h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
         }
 
-        .month-change {
-            width: 200px;
-            border-radius: 50%;
+        .title-group p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .month-controls {
+            display: grid;
+            grid-template-columns: 42px minmax(180px, auto) 42px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .month-label {
+            min-height: 42px;
             display: grid;
             place-items: center;
-            margin: 0 10px;
-            cursor: pointer;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface-soft);
+            padding: 0 16px;
+            text-align: center;
         }
 
-        .instructor-dayOff {
-            position: absolute;
-            right: 10px; /* 將文字放置在容器的右側 */
-            top: 50%; /* 垂直居中 */
-            transform: translateY(-50%); /* 使其在Y軸上居中 */
-            font-size: 14px; /* 調整字體大小 */
-            color: #ffffff; /* 根據需要設置字體顏色 */
+        .month-label strong {
+            font-size: 18px;
         }
 
-        .instructor-lessonNums {
-            position: absolute;
-            left: 10px; /* 將文字放置在容器的右側 */
-            top: 50%; /* 垂直居中 */
-            transform: translateY(-50%); /* 使其在Y軸上居中 */
-            font-size: 14px; /* 調整字體大小 */
-            color: #ffffff; /* 根據需要設置字體顏色 */
+        .month-label span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .status-bar {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-soft);
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .status-bar.error {
+            color: var(--danger);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-strong);
+        }
+
+        .stats-panel {
+            padding: 14px 20px;
+        }
+
+        .stats-panel + .stats-panel {
+            border-left: 1px solid var(--border);
+        }
+
+        .stats-panel h2 {
+            margin: 0 0 10px;
+            font-size: 15px;
+        }
+
+        .chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--surface);
+            padding: 3px 10px;
+            font-size: 13px;
+            line-height: 1.35;
+            white-space: nowrap;
+        }
+
+        .chip strong {
+            margin-left: 5px;
+        }
+
+        .calendar-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 380px;
+            min-height: 720px;
+        }
+
+        .calendar-panel {
+            padding: 16px;
+            min-width: 0;
+        }
+
+        .calendar-week-day,
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
         }
 
         .calendar-week-day {
-            height: 40px;
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            font-weight: 600;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
         .calendar-week-day div {
-            display: grid;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
             text-align: center;
-            /* place-items: center; */
-            color: rgb(255, 255, 255);
         }
 
         .calendar-days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 2px;
-            font-size: 25px;
-            color: rgb(255, 255, 255);
+            gap: 8px;
         }
 
-        .calendar-days div {
-            width: 220px;
-            height: 300px;
-            text-align: center;
-            /* display: flex; */
-            /* align-items: center; */
-            /* justify-content: center; */
-            /* margin-left: 8px; */
-            position: relative;
+        .day-cell {
+            min-width: 0;
+            min-height: 156px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface-strong);
+            padding: 8px;
+            text-align: left;
+            cursor: default;
+            overflow: hidden;
+            transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+        }
+
+        .day-cell.placeholder {
+            border-color: transparent;
+            background: transparent;
+        }
+
+        .day-cell.has-data {
             cursor: pointer;
-            /* animation: to-top 1s forwards; */
-            border-radius: 10%;
-            border: 1px solid rgb(255, 255, 255);
-            background-color: rgb(116, 116, 116);
         }
 
-        .calendar-days div:hover {
-            /* transition: 0.5s ease-in-out; */
-            /* width: 50px; */
-            /* height: 50px; */
-            /* width: 100%; */
-            /* height: 100%; */
-            border-radius: 10%;
-            /* border: 1px solid rgb(255, 234, 0); */
-            background-color: rgb(50, 50, 50);
+        .day-cell.has-data:hover,
+        .day-cell.selected {
+            border-color: var(--accent);
+            background: #fbfffe;
+            transform: translateY(-1px);
         }
 
-        .calendar-days div.calendar-test {
-            height: 0px;
-            border: 0px;
-            font-size: 9pt;
-            text-align: start;
-            margin-left: 8px;
-            max-width: 210px; /* 設定最大寬度為200px，可依需要調整 */
-            word-wrap: break-word; /* 自動換行 */
+        .day-cell.today {
+            border-color: var(--accent);
+            box-shadow: inset 0 0 0 2px var(--accent-soft);
         }
 
-        .calendar-days div span {
-            position: absolute;
+        .day-cell.out-of-season {
+            background: #ededed;
+            color: #9a9a9a;
         }
 
-        .calendar-days div.curr-date,
-        .calendar-days div.curr-date:hover {
-            background-color: rgb(17, 112, 255);
-            color: white;
-            /* border-radius: 50%; */
+        .day-number {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .today-label {
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .day-summary {
+            display: grid;
+            gap: 6px;
+        }
+
+        .lesson-pill,
+        .extra-pill {
+            min-width: 0;
+            border-radius: 6px;
+            padding: 5px 7px;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .lesson-pill {
+            background: var(--accent-soft);
+            border-left: 4px solid var(--accent);
+        }
+
+        .lesson-pill.ski {
+            border-left-color: var(--ski);
+        }
+
+        .lesson-pill.snowboard {
+            border-left-color: var(--snowboard);
+        }
+
+        .lesson-pill strong,
+        .extra-pill strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .lesson-pill span,
+        .extra-pill span {
+            display: block;
+            color: var(--muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .extra-pill {
+            background: #f1eee7;
+            border-left: 4px solid #9a824f;
+        }
+
+        .extra-pill.dayoff {
+            border-left-color: var(--dayoff);
+        }
+
+        .more-line {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .day-detail-panel {
+            min-width: 0;
+            border-left: 1px solid var(--border);
+            background: var(--surface-strong);
+            padding: 16px;
+            overflow: auto;
+        }
+
+        .detail-sticky {
+            position: sticky;
+            top: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .detail-header {
+            display: grid;
+            gap: 8px;
+        }
+
+        .detail-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .detail-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .detail-section {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            padding: 12px;
+        }
+
+        .detail-section h3 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin: 0 0 10px;
+            font-size: 15px;
+        }
+
+        .assignment-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .assignment-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface-strong);
+            padding: 10px;
+        }
+
+        .assignment-card header {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .student-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .student-chip {
+            min-width: 0;
+            border-radius: 999px;
+            background: var(--surface-soft);
+            padding: 4px 8px;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .student-chip span {
+            color: var(--muted);
+        }
+
+        .json-preview {
+            max-height: 260px;
+            overflow: auto;
+            margin: 0;
+            border-radius: var(--radius);
+            background: #151719;
+            color: #f5f5ec;
+            padding: 12px;
+            font-size: 12px;
+            line-height: 1.45;
+            white-space: pre-wrap;
+        }
+
+        .empty-state {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        @media (max-width: 1180px) {
+            .calendar-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .day-detail-panel {
+                border-left: 0;
+                border-top: 1px solid var(--border);
+            }
+
+            .detail-sticky {
+                position: static;
+            }
+        }
+
+        @media (max-width: 820px) {
+            .calendar-shell {
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .app-header,
+            .status-bar,
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-panel + .stats-panel {
+                border-left: 0;
+                border-top: 1px solid var(--border);
+            }
+
+            .calendar-panel {
+                padding: 10px;
+                overflow-x: auto;
+            }
+
+            .calendar-week-day,
+            .calendar-days {
+                min-width: 760px;
+            }
+
+            .day-cell {
+                min-height: 132px;
+            }
         }
     </style>
-
 </head>
 
 <body>
-    <div class="calendar">
-
-        <div class="calendar-header">
-            <!-- 年 -->
-            <span class="year-picker" id="year">2022</span>
-            <!-- 月 -->
-            <div class="month-picker">
-                <span class="instructor-lessonNums" id="lessonNums"></span>
-                <span class="month-change" id="prev-month">
-                    <pre><</pre>
-                </span>
-                <span class="month" id="month">February</span>
-                <span class="month-change" id="next-month">
-                    <pre>></pre>
-                </span>
-                <span class="instructor-dayOff" id="dayOff"></span>
+    <main class="calendar-shell">
+        <header class="app-header">
+            <div class="title-group">
+                <h1>教練時間表</h1>
+                <p id="seasonLabel">載入季節設定中...</p>
             </div>
+            <div class="month-controls" aria-label="月份切換">
+                <button id="prev-month" type="button" aria-label="上一個月">&lt;</button>
+                <div class="month-label">
+                    <strong id="month">-</strong>
+                    <span id="year">-</span>
+                </div>
+                <button id="next-month" type="button" aria-label="下一個月">&gt;</button>
+            </div>
+        </header>
 
+        <div id="statusBar" class="status-bar">
+            <span id="statusText">載入資料中...</span>
+            <button id="reloadButton" type="button">重新載入</button>
         </div>
 
-        <div class="calendar-body">
-            <!-- 日 -->
+        <section class="stats-grid" aria-label="統計資訊">
+            <article class="stats-panel">
+                <h2>課數統計</h2>
+                <div id="lessonNums" class="chip-list"></div>
+            </article>
+            <article class="stats-panel">
+                <h2>本月請假統計</h2>
+                <div id="dayOff" class="chip-list"></div>
+            </article>
+        </section>
 
-            <!-- 星期 -->
-            <div class="calendar-week-day">
-                <div>日</div>
-                <div>一</div>
-                <div>二</div>
-                <div>三</div>
-                <div>四</div>
-                <div>五</div>
-                <div>六</div>
-            </div>
-            <!-- 日期 -->
-            <div class="calendar-days">
+        <section class="calendar-layout">
+            <section class="calendar-panel">
+                <div class="calendar-week-day">
+                    <div>日</div>
+                    <div>一</div>
+                    <div>二</div>
+                    <div>三</div>
+                    <div>四</div>
+                    <div>五</div>
+                    <div>六</div>
+                </div>
+                <div id="calendarDays" class="calendar-days"></div>
+            </section>
 
-            </div>
+            <aside id="dayDetailPanel" class="day-detail-panel">
+                <div class="detail-sticky">
+                    <div class="detail-header">
+                        <h2 id="selectedDayTitle">選擇日期</h2>
+                        <p id="selectedDayHint" class="empty-state">點選有資料的日期後，這裡會顯示當天教練、學生與請假內容。</p>
+                        <div class="detail-actions">
+                            <button id="copySelectedDayButton" type="button" disabled>複製 JSON</button>
+                            <button id="openSelectedDayButton" type="button" disabled>開新分頁</button>
+                        </div>
+                    </div>
+                    <div id="selectedDayContent"></div>
+                </div>
+            </aside>
+        </section>
+    </main>
 
-        </div>
-
-        <div class="month-list"></div>
-
-    </div>
-
-    <!---------------------------------------------------- JavaScript ---------------------------------------------------->
-    <script >
+    <script>
         let ALLOW_SHOW_RANGE_EXCEED_SEASON = false;
         let DAY_TS = 24 * 60 * 60 * 1000;
         let SEASON_BEGIN = null;
@@ -204,17 +559,34 @@
         let MONTH_NAMES = [];
         let MIN_DISPLAY_NUM = {};
         let SERVICE_DISPLAY_UNIT = {};
-        // 可以看到名額的時間
-        let SERVICE_VISIBLE_TS = {}
-        // 服務開放的時間
-        let SERVICE_OPEN_TS = {}
-        let FORCE_ALL_SERVICE_VISIBLE = false;   // 要看私人/團體課請在calendar.html中自行改成true.
+        let SERVICE_VISIBLE_TS = {};
+        let SERVICE_OPEN_TS = {};
+        let FORCE_ALL_SERVICE_VISIBLE = false;
 
-		let overallAvailableSchedule = {}
-        const SEASON_CONFIG_URL = 'https://api.sidecutburninglab.net/data-get/season-config';
-        const CALENDAR_DATA_URL = 'https://api.sidecutburninglab.net/data-get/calendar/instructor';
+        let overallAvailableSchedule = {};
+        let selectedDayInfo = null;
+        let currentMonth = 0;
+        let currentYear = 0;
+
+        const API_BASE_URL = new URLSearchParams(window.location.search).get('apiBase') || 'http://localhost:8080';
+        const SEASON_CONFIG_URL = `${API_BASE_URL}/data-get/season-config`;
+        const CALENDAR_DATA_URL = `${API_BASE_URL}/data-get/calendar/instructor`;
+        const MAIN_KEYS = ['ski', 'snowboard', '請假名單'];
+
+        const $ = (selector) => document.querySelector(selector);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            $('#prev-month').addEventListener('click', () => changeMonth(-1));
+            $('#next-month').addEventListener('click', () => changeMonth(1));
+            $('#reloadButton').addEventListener('click', () => bootstrap(true));
+            $('#copySelectedDayButton').addEventListener('click', copySelectedDay);
+            $('#openSelectedDayButton').addEventListener('click', openSelectedDayOnNewTab);
+            bootstrap();
+        });
+
         async function loadCalendarData() {
-        const res = await fetch(CALENDAR_DATA_URL);
+            const res = await fetch(CALENDAR_DATA_URL);
+
             if (!res.ok) {
                 throw new Error(`Failed to load calendar data: ${res.status}`);
             }
@@ -222,8 +594,10 @@
             const data = await res.json();
             overallAvailableSchedule = data || {};
         }
+
         async function loadSeasonConfig() {
             const res = await fetch(SEASON_CONFIG_URL);
+
             if (!res.ok) {
                 throw new Error(`Failed to load season config: ${res.status}`);
             }
@@ -253,36 +627,61 @@
                 SERVICE_OPEN_TS[key] = new Date(config.SERVICE_OPEN_TS[key]).getTime();
             }
         }
-        async function bootstrap() {
+
+        async function bootstrap(forceReload = false) {
+            setLoading(true);
+            setStatus(forceReload ? '重新載入資料中...' : '載入資料中...');
+
             try {
                 await loadSeasonConfig();
                 await loadCalendarData();
-                main();
+                initCurrentMonth(forceReload);
+                renderCalendar();
+                setStatus('資料已更新');
             } catch (err) {
                 console.error(err);
-                alert('載入行事曆設定失敗');
+                setStatus('載入行事曆設定失敗，請確認本機 API server 是否已啟動。', true);
+            } finally {
+                setLoading(false);
             }
         }
 
-        bootstrap();
-        // 設定閏月的規則 https://xiwan.io/archive/most-efficient-leap-year-algorithm.html
+        function setLoading(isLoading) {
+            $('#reloadButton').disabled = isLoading;
+
+            if (isLoading || !SEASON_BEGIN || !SEASON_END || !currentYear) {
+                $('#prev-month').disabled = true;
+                $('#next-month').disabled = true;
+                return;
+            }
+
+            updateMonthButtons();
+        }
+
+        function setStatus(message, isError = false) {
+            $('#statusText').textContent = message;
+            $('#statusBar').classList.toggle('error', isError);
+        }
+
         function isLeapYear(year) {
             return (year % 4 === 0 && year % 100 !== 0 && year % 400 !== 0) || (year % 100 === 0 && year % 400 === 0);
         }
 
-        // 抓閏月
         function getFebDays(year) {
             return isLeapYear(year) ? 29 : 28;
         }
 
         function getDaysOfMonth(month, year) {
-            let daysOfMonth = [31, getFebDays(year), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            const daysOfMonth = [31, getFebDays(year), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
             return daysOfMonth[month];
         }
-        function parseDateOnlyLocal(dateString) {
-            if (!dateString) return null;
 
-            const [year, month, day] = dateString.split('-').map(Number);
+        function parseDateOnlyLocal(dateString) {
+            if (!dateString) {
+                return null;
+            }
+
+            const [year, month, day] = String(dateString).split('-').map(Number);
 
             if (!year || !month || !day) {
                 throw new Error(`Invalid date string: ${dateString}`);
@@ -290,204 +689,542 @@
 
             return new Date(year, month - 1, day, 0, 0, 0, 0);
         }
-        function copyToClipboardAndShowResultOnNewTab( text ) {
-            var textArea = document.createElement("textarea");
+
+        function getMonthName(month) {
+            return MONTH_NAMES[month] || `${month + 1}月`;
+        }
+
+        function formatDateLabel(year, month, day) {
+            return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function initCurrentMonth(force = false) {
+            if (!force && currentYear && currentMonth !== null) {
+                return;
+            }
+
+            const today = new Date();
+            const seasonBeginMonth = new Date(SEASON_BEGIN.getFullYear(), SEASON_BEGIN.getMonth(), 1);
+            const seasonEndMonth = new Date(SEASON_END.getFullYear(), SEASON_END.getMonth(), 1);
+            let initialDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+            if (!ALLOW_SHOW_RANGE_EXCEED_SEASON) {
+                if (initialDate.getTime() < seasonBeginMonth.getTime()) {
+                    initialDate = seasonBeginMonth;
+                } else if (initialDate.getTime() > seasonEndMonth.getTime()) {
+                    initialDate = seasonEndMonth;
+                }
+            }
+
+            currentMonth = initialDate.getMonth();
+            currentYear = initialDate.getFullYear();
+        }
+
+        function canShowMonth(year, month) {
+            if (ALLOW_SHOW_RANGE_EXCEED_SEASON) {
+                return true;
+            }
+
+            const monthStart = new Date(year, month, 1).getTime();
+            const seasonBeginMonth = new Date(SEASON_BEGIN.getFullYear(), SEASON_BEGIN.getMonth(), 1).getTime();
+            const seasonEndMonth = new Date(SEASON_END.getFullYear(), SEASON_END.getMonth(), 1).getTime();
+
+            return monthStart >= seasonBeginMonth && monthStart <= seasonEndMonth;
+        }
+
+        function changeMonth(delta) {
+            const nextDate = new Date(currentYear, currentMonth + delta, 1);
+            const nextYear = nextDate.getFullYear();
+            const nextMonth = nextDate.getMonth();
+
+            if (!canShowMonth(nextYear, nextMonth)) {
+                return;
+            }
+
+            currentYear = nextYear;
+            currentMonth = nextMonth;
+            renderCalendar();
+        }
+
+        function getMonthData(year, month) {
+            const yearData = overallAvailableSchedule[year] || overallAvailableSchedule[String(year)] || {};
+            return yearData[month + 1] || yearData[String(month + 1)] || {};
+        }
+
+        function isDateInSeason(date) {
+            if (!SEASON_BEGIN || !SEASON_END) {
+                return true;
+            }
+
+            return date.getTime() >= SEASON_BEGIN.getTime() && date.getTime() <= SEASON_END.getTime();
+        }
+
+        function normalizeInstructorPairs(value) {
+            if (Array.isArray(value)) {
+                return value;
+            }
+
+            if (value && typeof value === 'object') {
+                return [value];
+            }
+
+            return [];
+        }
+
+        function getStudentRows(students) {
+            if (!students || typeof students !== 'object') {
+                return [];
+            }
+
+            return Object.entries(students).map(([name, detail]) => ({
+                name,
+                detail: detail && typeof detail === 'object' ? detail : {},
+            }));
+        }
+
+        function getLessonAssignments(dayData, lessonType) {
+            return normalizeInstructorPairs(dayData[lessonType]).flatMap((pair) => (
+                Object.entries(pair || {}).map(([instructor, students]) => ({
+                    lessonType,
+                    instructor,
+                    students: getStudentRows(students),
+                }))
+            ));
+        }
+
+        function getStudentNum(student) {
+            const num = Number(student.detail.num || 0);
+            return Number.isFinite(num) && num > 0 ? num : 0;
+        }
+
+        function getAssignmentStudentCount(assignment) {
+            return assignment.students.reduce((sum, student) => sum + getStudentNum(student), 0);
+        }
+
+        function getLessonSummary(dayData, lessonType) {
+            const assignments = getLessonAssignments(dayData, lessonType);
+            const groupCount = assignments.reduce((sum, assignment) => sum + assignment.students.length, 0);
+            const studentCount = assignments.reduce((sum, assignment) => sum + getAssignmentStudentCount(assignment), 0);
+
+            return {
+                assignments,
+                instructorCount: assignments.length,
+                groupCount,
+                studentCount,
+            };
+        }
+
+        function hasObjectData(value) {
+            return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0;
+        }
+
+        function hasArrayData(value) {
+            return Array.isArray(value) && value.length > 0;
+        }
+
+        function buildDayPayload(dayData) {
+            const payload = {};
+
+            for (const key of ['ski', 'snowboard']) {
+                if (hasArrayData(dayData[key])) {
+                    payload[key] = dayData[key];
+                }
+            }
+
+            Object.keys(dayData || {}).forEach((key) => {
+                if (MAIN_KEYS.includes(key) || key === '請假統計') {
+                    return;
+                }
+
+                const value = dayData[key];
+
+                if (hasArrayData(value) || hasObjectData(value)) {
+                    payload[key] = value;
+                }
+            });
+
+            if (hasArrayData(dayData['請假名單']) || hasObjectData(dayData['請假名單'])) {
+                payload['請假名單'] = dayData['請假名單'];
+            }
+
+            return payload;
+        }
+
+        function hasDayPayload(payload) {
+            return Object.keys(payload).length > 0;
+        }
+
+        function renderStats(container, data, emptyText) {
+            const entries = Object.entries(data || {}).sort(([a], [b]) => a.localeCompare(b, 'zh-Hant'));
+
+            if (!entries.length) {
+                container.innerHTML = `<span class="empty-state">${escapeHtml(emptyText)}</span>`;
+                return;
+            }
+
+            container.innerHTML = entries
+                .map(([key, value]) => `<span class="chip">${escapeHtml(key)} <strong>${escapeHtml(value)}</strong></span>`)
+                .join('');
+        }
+
+        function renderMonthStats(monthData) {
+            renderStats($('#lessonNums'), overallAvailableSchedule['目前教練課數'], '目前沒有課數資料');
+            renderStats($('#dayOff'), monthData['請假統計'], '本月沒有請假統計');
+        }
+
+        function renderCalendar() {
+            const calendarDays = $('#calendarDays');
+            const monthData = getMonthData(currentYear, currentMonth);
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const daysInMonth = getDaysOfMonth(currentMonth, currentYear);
+            const today = new Date();
+            const cells = [];
+
+            $('#month').textContent = getMonthName(currentMonth);
+            $('#year').textContent = currentYear;
+            $('#seasonLabel').textContent = `${formatDateLabel(SEASON_BEGIN.getFullYear(), SEASON_BEGIN.getMonth(), SEASON_BEGIN.getDate())} ~ ${formatDateLabel(SEASON_END.getFullYear(), SEASON_END.getMonth(), SEASON_END.getDate())}`;
+            renderMonthStats(monthData);
+            updateMonthButtons();
+
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                cells.push('<div class="day-cell placeholder" aria-hidden="true"></div>');
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(currentYear, currentMonth, day);
+                const dayData = monthData[day] || monthData[String(day)] || {};
+                const payload = buildDayPayload(dayData);
+                const hasData = hasDayPayload(payload);
+                const isToday = day === today.getDate() && currentYear === today.getFullYear() && currentMonth === today.getMonth();
+                const inSeason = isDateInSeason(date);
+                const cellClasses = [
+                    'day-cell',
+                    hasData ? 'has-data' : '',
+                    isToday ? 'today' : '',
+                    inSeason ? '' : 'out-of-season',
+                    selectedDayInfo && selectedDayInfo.dateLabel === formatDateLabel(currentYear, currentMonth, day) ? 'selected' : '',
+                ].filter(Boolean).join(' ');
+
+                cells.push(`
+                    <button class="${cellClasses}" type="button" data-day="${day}" ${hasData ? '' : 'disabled'}>
+                        <div class="day-number">
+                            <span>${day}</span>
+                            ${isToday ? '<span class="today-label">今天</span>' : ''}
+                        </div>
+                        ${renderDaySummary(dayData, payload)}
+                    </button>
+                `);
+            }
+
+            calendarDays.innerHTML = cells.join('');
+
+            calendarDays.querySelectorAll('.day-cell.has-data').forEach((cell) => {
+                cell.addEventListener('click', () => {
+                    const day = Number(cell.dataset.day);
+                    selectDay(currentYear, currentMonth, day);
+                });
+            });
+
+            const usedCells = firstDay.getDay() + daysInMonth;
+            const trailingCells = (7 - (usedCells % 7)) % 7;
+
+            if (trailingCells) {
+                calendarDays.insertAdjacentHTML('beforeend', Array.from({ length: trailingCells }, () => '<div class="day-cell placeholder" aria-hidden="true"></div>').join(''));
+            }
+        }
+
+        function updateMonthButtons() {
+            const prev = new Date(currentYear, currentMonth - 1, 1);
+            const next = new Date(currentYear, currentMonth + 1, 1);
+            const canPrev = canShowMonth(prev.getFullYear(), prev.getMonth());
+            const canNext = canShowMonth(next.getFullYear(), next.getMonth());
+
+            $('#prev-month').disabled = !canPrev;
+            $('#next-month').disabled = !canNext;
+            $('#prev-month').setAttribute('aria-disabled', String(!canPrev));
+            $('#next-month').setAttribute('aria-disabled', String(!canNext));
+        }
+
+        function renderDaySummary(dayData, payload) {
+            if (!hasDayPayload(payload)) {
+                return '<div class="empty-state">-</div>';
+            }
+
+            const parts = [];
+
+            for (const lessonType of ['ski', 'snowboard']) {
+                const summary = getLessonSummary(dayData, lessonType);
+
+                if (!summary.assignments.length) {
+                    continue;
+                }
+
+                const instructorNames = summary.assignments.map((item) => item.instructor).join('、');
+                const countText = [
+                    `${summary.instructorCount}位教練`,
+                    summary.groupCount ? `${summary.groupCount}組` : '',
+                    summary.studentCount ? `${summary.studentCount}人` : '',
+                ].filter(Boolean).join(' / ');
+
+                parts.push(`
+                    <div class="lesson-pill ${lessonType}">
+                        <strong>${escapeHtml(lessonType)}</strong>
+                        <span>${escapeHtml(countText)}</span>
+                        <span>${escapeHtml(instructorNames)}</span>
+                    </div>
+                `);
+            }
+
+            const extraEntries = Object.entries(payload)
+                .filter(([key]) => key !== 'ski' && key !== 'snowboard')
+                .slice(0, 3);
+
+            extraEntries.forEach(([key, value]) => {
+                parts.push(`
+                    <div class="extra-pill ${key === '請假名單' ? 'dayoff' : ''}">
+                        <strong>${escapeHtml(key)}</strong>
+                        <span>${escapeHtml(formatExtraSummary(value))}</span>
+                    </div>
+                `);
+            });
+
+            const hiddenCount = Math.max(0, Object.keys(payload).length - parts.length);
+
+            if (hiddenCount > 0) {
+                parts.push(`<div class="more-line">另有 ${hiddenCount} 筆資料</div>`);
+            }
+
+            return `<div class="day-summary">${parts.join('')}</div>`;
+        }
+
+        function formatExtraSummary(value) {
+            if (Array.isArray(value)) {
+                return value.join('、');
+            }
+
+            if (value && typeof value === 'object') {
+                return Object.keys(value).join('、');
+            }
+
+            return value || '';
+        }
+
+        async function selectDay(year, month, day) {
+            const monthData = getMonthData(year, month);
+            const dayData = monthData[day] || monthData[String(day)] || {};
+            const payload = buildDayPayload(dayData);
+
+            selectedDayInfo = {
+                year,
+                month,
+                day,
+                dateLabel: formatDateLabel(year, month, day),
+                payload,
+            };
+
+            renderSelectedDay();
+            renderCalendar();
+
+            if (hasDayPayload(payload)) {
+                try {
+                    await copyText(formatSelectedDayJson());
+                    setStatus(`${selectedDayInfo.dateLabel} 已複製到剪貼簿`);
+                } catch (error) {
+                    console.error(error);
+                    setStatus(`${selectedDayInfo.dateLabel} 已選取，但複製到剪貼簿失敗`, true);
+                }
+            }
+        }
+
+        function renderSelectedDay() {
+            const title = $('#selectedDayTitle');
+            const hint = $('#selectedDayHint');
+            const content = $('#selectedDayContent');
+            const copyButton = $('#copySelectedDayButton');
+            const openButton = $('#openSelectedDayButton');
+
+            if (!selectedDayInfo) {
+                title.textContent = '選擇日期';
+                hint.textContent = '點選有資料的日期後，這裡會顯示當天教練、學生與請假內容。';
+                content.innerHTML = '';
+                copyButton.disabled = true;
+                openButton.disabled = true;
+                return;
+            }
+
+            const hasData = hasDayPayload(selectedDayInfo.payload);
+
+            title.textContent = selectedDayInfo.dateLabel;
+            hint.textContent = hasData ? '已整理成可讀格式；完整 JSON 仍可複製或開新分頁查看。' : '當天沒有資料。';
+            copyButton.disabled = !hasData;
+            openButton.disabled = !hasData;
+            content.innerHTML = hasData ? renderSelectedDayContent(selectedDayInfo.payload) : '';
+        }
+
+        function renderSelectedDayContent(payload) {
+            const sections = [];
+
+            for (const lessonType of ['ski', 'snowboard']) {
+                const assignments = getLessonAssignments(payload, lessonType);
+
+                if (assignments.length) {
+                    sections.push(renderLessonDetailSection(lessonType, assignments));
+                }
+            }
+
+            Object.entries(payload)
+                .filter(([key]) => key !== 'ski' && key !== 'snowboard')
+                .forEach(([key, value]) => {
+                    sections.push(renderExtraDetailSection(key, value));
+                });
+
+            sections.push(`
+                <section class="detail-section">
+                    <h3>完整 JSON</h3>
+                    <pre class="json-preview">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>
+                </section>
+            `);
+
+            return sections.join('');
+        }
+
+        function renderLessonDetailSection(lessonType, assignments) {
+            const groupCount = assignments.reduce((sum, assignment) => sum + assignment.students.length, 0);
+            const studentCount = assignments.reduce((sum, assignment) => sum + getAssignmentStudentCount(assignment), 0);
+
+            return `
+                <section class="detail-section">
+                    <h3>
+                        <span>${escapeHtml(lessonType)}</span>
+                        <span>${assignments.length}位教練 / ${groupCount}組${studentCount ? ` / ${studentCount}人` : ''}</span>
+                    </h3>
+                    <div class="assignment-list">
+                        ${assignments.map(renderAssignmentCard).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderAssignmentCard(assignment) {
+            const studentCount = getAssignmentStudentCount(assignment);
+            const countText = [
+                `${assignment.students.length}組`,
+                studentCount ? `${studentCount}人` : '',
+            ].filter(Boolean).join(' / ');
+
+            return `
+                <article class="assignment-card">
+                    <header>
+                        <span>${escapeHtml(assignment.instructor)}</span>
+                        <span>${escapeHtml(countText)}</span>
+                    </header>
+                    <div class="student-list">
+                        ${assignment.students.length ? assignment.students.map(renderStudentChip).join('') : '<span class="empty-state">沒有學生資料</span>'}
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderStudentChip(student) {
+            const detail = student.detail || {};
+            const parts = [];
+
+            if (detail.serviceType) {
+                parts.push(detail.serviceType);
+            }
+
+            if (detail.num) {
+                parts.push(`${detail.num}人`);
+            }
+
+            if (detail.level !== undefined && detail.level !== null && String(detail.level) !== '' && Number(detail.level) !== 0) {
+                parts.push(`L${detail.level}`);
+            }
+
+            if (detail.skiResort) {
+                parts.push(detail.skiResort);
+            }
+
+            return `
+                <span class="student-chip">
+                    ${escapeHtml(student.name)}
+                    ${parts.length ? `<span> ${escapeHtml(parts.join(' · '))}</span>` : ''}
+                </span>
+            `;
+        }
+
+        function renderExtraDetailSection(key, value) {
+            return `
+                <section class="detail-section">
+                    <h3>${escapeHtml(key)}</h3>
+                    <pre class="json-preview">${escapeHtml(JSON.stringify(value, null, 2))}</pre>
+                </section>
+            `;
+        }
+
+        function formatSelectedDayJson() {
+            if (!selectedDayInfo) {
+                return '';
+            }
+
+            return `${selectedDayInfo.dateLabel}\n${JSON.stringify(selectedDayInfo.payload, null, 2)}`;
+        }
+
+        async function copySelectedDay() {
+            if (!selectedDayInfo || !hasDayPayload(selectedDayInfo.payload)) {
+                return;
+            }
+
+            try {
+                await copyText(formatSelectedDayJson());
+                setStatus(`${selectedDayInfo.dateLabel} 已複製到剪貼簿`);
+            } catch (error) {
+                console.error(error);
+                setStatus('複製到剪貼簿失敗', true);
+            }
+        }
+
+        function openSelectedDayOnNewTab() {
+            if (!selectedDayInfo || !hasDayPayload(selectedDayInfo.payload)) {
+                return;
+            }
+
+            const newTab = window.open('about:blank', '_blank');
+
+            if (!newTab) {
+                setStatus('瀏覽器阻擋了新分頁', true);
+                return;
+            }
+
+            newTab.document.write(`<textarea style="resize:none;width:100%;height:100%;font-family:monospace;">${escapeHtml(formatSelectedDayJson())}</textarea>`);
+            newTab.document.close();
+        }
+
+        async function copyText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return;
+            }
+
+            const textArea = document.createElement('textarea');
             textArea.value = text;
+            textArea.setAttribute('readonly', '');
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
             document.body.appendChild(textArea);
             textArea.select();
-            var successful = document.execCommand("copy");
+            document.execCommand('copy');
             document.body.removeChild(textArea);
-            if (successful) {
-                console.log("複製到剪貼簿");
-            } else {
-                console.error("複製失敗");
-            }
-            var newTab = window.open("about:blank", "_blank");
-            newTab.document
-            newTab.document.write( "<textArea style=\"resize:none;width:100%;height:100%;\">" + text + "</textArea>");
-            newTab.document.close(); // to finish loading the page
         }
-        function main () {
-            // 抓calendar css
-            let calendar = document.querySelector('.calendar');
-
-            // 產生年月
-            generateCalendar = (month, year) => {
-                let calendarDays = calendar.querySelector('.calendar-days');
-                let calendarHeaderYear = calendar.querySelector('#year');
-                let calendarHeaderMonth = calendar.querySelector('#month');
-                let dayOffInfo = document.querySelector('.instructor-dayOff');
-                let lessonNumsInfo = document.querySelector('.instructor-lessonNums');
-                calendarDays.innerHTML = '';
-
-                // 抓現在的日期
-                let currDate = new Date();
-
-                let currMonth = `${MONTH_NAMES[month]}`;
-                calendarHeaderMonth.innerHTML = currMonth;
-                calendarHeaderYear.innerHTML = year;
-
-                let firstDay = new Date(year, month, 1);
-                let toDay = getDaysOfMonth(month, year) + firstDay.getDay() - 1;
-                // toDay = Math.ceil((toDay+1) / 7) * 7 - 1
-
-                let yearData = overallAvailableSchedule[year] ? overallAvailableSchedule[year] : {};
-                let monthData = yearData[month+1] ? yearData[month+1] : {};
-
-                let lessonNum = overallAvailableSchedule["目前教練課數"];
-                let lessonNumsStr = "課數統計: <br>";
-                Object.entries(lessonNum).forEach(([key, value]) => {
-                    lessonNumsStr += `${key}: ${value}<br>`;
-                });
-                lessonNumsInfo.innerHTML = lessonNumsStr;
-                
-                let dayOffSum = monthData["請假統計"] ? monthData["請假統計"] : {};
-                let dayOffSumStr = "";
-                Object.entries(dayOffSum).forEach(([key, value]) => {
-                    dayOffSumStr += `${key}: ${value}<br>`;
-                });
-                if ( dayOffSumStr !== "" ) {
-                    dayOffSumStr = "請假統計: <br>" + dayOffSumStr;
-                }
-                dayOffInfo.innerHTML = dayOffSumStr;
-
-                const mainKeys = ["ski", "snowboard", "請假名單"];
-                for (let i = 0; i <= toDay; i++) {
-                    let dayDiv = document.createElement('div');
-                    // if (i >= firstDay.getDay() && i <= getDaysOfMonth[month] + firstDay.getDay() - 1) {
-                    let day = i - firstDay.getDay() + 1;
-                    let dayTs = new Date(year, month, day);
-                    let dayData = monthData[day] ? monthData[day] : {};
-                    let readyToCopy = "";
-                    if ( day >= 1 ) {
-                        dayDiv.innerHTML = day;
-                        if ( dayTs > SEASON_BEGIN.getTime() - DAY_TS && dayTs <= SEASON_END.getTime() ) {
-                            let skiGroup = dayData["ski"] ?  dayData["ski"] : [];
-                            let skiStr = "";
-                            let needBr = false;
-                            if ( skiGroup.length ) {
-                                needBr = true;
-                                skiStr = "\"ski\":<br>"
-                                for ( let j = 0; j < skiGroup.length; j++ ) {
-                                    let content = JSON.stringify( skiGroup[j] );
-                                    if ( skiGroup.length !== 1 ) {
-                                        if ( j !== skiGroup.length - 1 ) {
-                                            content = content.substring(0, content.length-1);
-                                        }
-                                        if ( j !== 0 ) {
-                                            content = "," + content.substring(1, content.length);
-                                        }
-                                    }
-                                    skiStr += content;
-                                    if ( j !== skiGroup.length - 1 ) {
-                                        skiStr += "<br>";
-                                    }
-                                }
-                            }
-                            let snowboardGroup = dayData["snowboard"] ?  dayData["snowboard"] : [];
-                            let snowboardStr = "";
-                            if ( snowboardGroup.length ) {
-                                snowboardStr = ( needBr ? ",<br>" : "" ) + "\"snowboard\":<br>";
-                                needBr = true;
-                                for ( let j = 0; j < snowboardGroup.length; j++ ) {
-                                    let content = JSON.stringify( snowboardGroup[j] );
-                                    if ( snowboardGroup.length !== 1 ) {
-                                        if ( j !== snowboardGroup.length - 1 ) {
-                                            content = content.substring(0, content.length-1);
-                                        }
-                                        if ( j !== 0 ) {
-                                            content = "," + content.substring(1, content.length);
-                                        }
-                                    }
-                                    snowboardStr += content;
-                                    if ( j !== snowboardGroup.length - 1 ) {
-                                        snowboardStr += "<br>";
-                                    }
-                                }
-                            }
-                            
-                            let notMainKeys = Object.keys( dayData ).filter( key => mainKeys.indexOf( key ) === -1 );
-                            let notMainStr = "";
-                            for ( let k = 0; k < notMainKeys.length; k++ ) {
-                                let key = notMainKeys[k];
-                                let group = dayData[key] ? dayData[key] : {};
-                                let str = "";
-                                if ( Object.keys(group).length ) {
-                                    str = ( needBr ? ",<br>" : "" ) + "\"" + key + "\"" + ":<br>" + JSON.stringify( group );
-                                    needBr = true;
-                                }
-                                notMainStr += str; 
-                            }
-
-                            let dayoffGroup = dayData["請假名單"] ?  dayData["請假名單"] : [];
-                            let dayoffdStr = "";
-                            if ( dayoffGroup.length ) {
-                                dayoffdStr = "\"請假名單\":<br>[ ";
-                                for ( let j = 0; j < dayoffGroup.length; j++ ) {
-                                    dayoffdStr += "\"" + dayoffGroup[j] + "\"";
-                                    if ( j !== dayoffGroup.length - 1 ) {
-                                        dayoffdStr += ", ";
-                                    }
-                                }
-                                dayoffdStr = ( needBr ? ",<br>" : "" ) + dayoffdStr + " ]";
-                            }
-                            readyToCopy = skiStr + snowboardStr + notMainStr + dayoffdStr;
-                            dayDiv.innerHTML += "<div class=\"calendar-test\">" + readyToCopy;
-                        }
-                        if (day === currDate.getDate() && year === currDate.getFullYear() && month === currDate.getMonth()) {
-                            dayDiv.classList.add('curr-date');
-                        }
-                    }
-                    calendarDays.appendChild(dayDiv);
-                    dayDiv.onclick = () => {
-                        if ( readyToCopy !== "" ) {
-                            let showText = JSON.stringify( JSON.parse( "{" + readyToCopy.replaceAll("<br>","") + "}" ) , null, 2 );
-                            showText = year.toString() + "-" + (month + 1).toString() + "-" + day.toString() + "\n" + showText;
-                            copyToClipboardAndShowResultOnNewTab( showText );
-                        }
-                    }
-                }
-            }
-
-            let currDate = new Date();
-            let seasonBeginMonth = new Date(SEASON_BEGIN.getFullYear(), SEASON_BEGIN.getMonth(), 1);
-            let seasonEndMonth = new Date(SEASON_END.getFullYear(), SEASON_END.getMonth(), getDaysOfMonth(SEASON_END.getMonth(), SEASON_END.getFullYear()));
-            let isCurrentDayinSeason = currDate.getTime() > seasonBeginMonth.getTime();
-            let currMonth = { value: isCurrentDayinSeason ? currDate.getMonth() : seasonBeginMonth.getMonth() };
-            let currYear = { value: isCurrentDayinSeason ? currDate.getFullYear() : seasonBeginMonth.getFullYear() };
-
-            generateCalendar(currMonth.value, currYear.value);
-
-            document.querySelector('#prev-month').onclick = () => {
-                let nextYear = currYear.value;
-                let nextMonth = currMonth.value - 1;
-                if ( nextMonth < 0 ) {
-                    nextMonth = nextMonth + 12;
-                    nextYear--;
-                }
-                let diff = (nextYear - seasonBeginMonth.getFullYear()) * 12 + nextMonth - seasonBeginMonth.getMonth();
-                if ( ALLOW_SHOW_RANGE_EXCEED_SEASON || diff >= 0 ) {
-                    currMonth.value = nextMonth;
-                    currYear.value = nextYear;
-                    generateCalendar(currMonth.value, currYear.value);
-                }
-            }
-
-            document.querySelector('#next-month').onclick = () => {
-                let nextYear = currYear.value;
-                let nextMonth = currMonth.value + 1;
-                if ( nextMonth >= 12 ) {
-                    nextMonth %= 12;
-                    nextYear++;
-                }
-                let diff = (seasonEndMonth.getFullYear() - nextYear) * 12 + seasonEndMonth.getMonth() - nextMonth;
-                if ( ALLOW_SHOW_RANGE_EXCEED_SEASON || diff >= 0 ) {
-                    currMonth.value = nextMonth;
-                    currYear.value = nextYear;
-                    generateCalendar(currMonth.value, currYear.value);
-                }
-            }
-        };
     </script>
 </body>
 
